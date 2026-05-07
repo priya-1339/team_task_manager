@@ -1,0 +1,60 @@
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background-color: #f4f6f9;
+    font-size: 14px;
+}
+
+h2 {
+    font-size: 1.4rem;
+}
+
+h4, h5 {
+    font-size: 1.1rem;
+}
+
+.navbar {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    font-size: 13px;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.table {
+    font-size: 13px;
+}
+
+.table-responsive {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.badge {
+    font-weight: 500;
+    font-size: 11px;
+}
+
+.btn {
+    font-size: 13px;
+}
+
+.form-control, .form-select {
+    font-size: 13px;
+}
+
+.form-label {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.fs-2 {
+    font-size: 1.5rem !important;
+}
+
+.alert {
+    font-size: 13px;
+}
