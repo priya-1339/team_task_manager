@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🗂 Team Task Manager
 
 A full-stack web app built with **Flask + MongoDB** that lets teams manage projects and tasks with role-based access control (Admin / Member).
@@ -139,3 +140,6 @@ python-dotenv
 gunicorn
 dnspython
 ```
+=======
+# team_task_manager
+>>>>>>> 10253f4a9c5e59601a202238964e617080071fd5

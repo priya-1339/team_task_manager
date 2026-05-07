@@ -47,6 +47,8 @@ def signup():
         email    = request.form['email'].strip().lower()
         password = request.form['password']
         confirm_password = request.form['confirm_password']
+        admin_key = request.form.get('admin_key', '').strip()
+        role = 'admin' if admin_key == os.getenv('ADMIN_SECRET_KEY') else 'member'
 
         if password != confirm_password:
             flash('Passwords do not match.', 'danger')
@@ -69,7 +71,7 @@ def signup():
             "name": name,
             "email": email,
             "password": hashed,
-            "role": request.form.get('role', 'member'),
+            "role": role,
             "created_at": datetime.utcnow()
         })
         flash('Account created! Please login.', 'success')
@@ -124,7 +126,7 @@ def dashboard():
 
     # Admins see all tasks; members see only their own
     if role == 'admin':
-        tasks = list(mongo.db.tasks.find().sort("created_at", -1))
+        tasks = list(mongo.db.tasks.find({"created_by": session['email']}).sort("created_at", -1))
     else:
         tasks = list(mongo.db.tasks.find({"assigned_to": session['email']}).sort("created_at", -1))
 
@@ -148,7 +150,10 @@ def dashboard():
         except Exception:
             t['overdue'] = False
 
-    projects = list(mongo.db.projects.find())
+    if role == 'admin':
+        projects = list(mongo.db.projects.find({"created_by": session['email']}))
+    else:
+        projects = list(mongo.db.projects.find())
 
     return render_template(
         'dashboard.html',
@@ -303,6 +308,13 @@ def delete_task(task_id):
 @app.route('/health')
 def health():
     return {"status": "ok"}
+@app.errorhandler(404)
+def not_found(e):
+    return "Page not found", 404
+
+@app.errorhandler(500)
+def server_error(e):
+    return "Something went wrong", 500
 
 if __name__ == "__main__":
     app.run(debug=os.getenv("DEBUG", "false").lower() == "true")
