@@ -6,7 +6,7 @@ A full-stack web application built with **Flask + MongoDB** featuring role-based
 
 ## 🚀 Live Demo
 
-🔗 [Live URL](web-production-368d6.up.railway.app) ← replace with your Railway URL
+🔗 https://web-production-368d6.up.railway.app/login ← replace with your Railway URL
 
 ---
 
