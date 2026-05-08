@@ -72,9 +72,9 @@ pip install -r requirements.txt
 
 ### 4. Create `.env` file
 ```
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/taskmanager?retryWrites=true&w=majority
-SECRET_KEY=your-secret-key-here
-ADMIN_SECRET_KEY=your-admin-secret-key-here
+MONGO_URI=mongodb+srv://priyadarshini:dL-a8w-t2xsmcJK@cluster0.ejqfo7d.mongodb.net/taskmanager?retryWrites=true&w=majority
+SECRET_KEY=some-long-random-string-here
+ADMIN_SECRET_KEY=TaskManager@Secret99
 ```
 
 ### 5. Run the app
