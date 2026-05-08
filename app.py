@@ -43,19 +43,30 @@ def signup():
         return redirect('/dashboard')
 
     if request.method == 'POST':
-        name     = request.form['name'].strip()
-        email    = request.form['email'].strip().lower()
-        password = request.form['password']
+        name             = request.form['name'].strip()
+        email            = request.form['email'].strip().lower()
+        password         = request.form['password']
         confirm_password = request.form['confirm_password']
-        admin_key = request.form.get('admin_key', '').strip()
-        role = 'admin' if admin_key == os.getenv('ADMIN_SECRET_KEY') else 'member'
+        admin_key        = request.form.get('admin_key', '').strip()
+        selected_role    = request.form.get('role', 'member')
+
+        # Role assignment
+        if selected_role == 'admin':
+            if admin_key == os.getenv('ADMIN_SECRET_KEY'):
+                role = 'admin'
+            else:
+                flash('Invalid admin key. Account not created.', 'danger')
+                return render_template('signup.html')
+        else:
+            role = 'member'
+
+        # Validations
+        if not name or not email or not password:
+            flash('All fields are required.', 'danger')
+            return render_template('signup.html')
 
         if password != confirm_password:
             flash('Passwords do not match.', 'danger')
-            return render_template('signup.html')
-
-        if not name or not email or not password:
-            flash('All fields are required.', 'danger')
             return render_template('signup.html')
 
         if len(password) < 6:
@@ -124,7 +135,7 @@ def dashboard():
 
     role = session['role']
 
-    # Admins see all tasks; members see only their own
+    # Admins see only their own tasks; members see only their assigned tasks
     if role == 'admin':
         tasks = list(mongo.db.tasks.find({"created_by": session['email']}).sort("created_at", -1))
     else:
@@ -150,10 +161,18 @@ def dashboard():
         except Exception:
             t['overdue'] = False
 
+    # Projects
     if role == 'admin':
         projects = list(mongo.db.projects.find({"created_by": session['email']}))
     else:
-        projects = list(mongo.db.projects.find())
+        assigned_tasks = mongo.db.tasks.find({"assigned_to": session['email']})
+        project_ids = [t.get('project_id') for t in assigned_tasks if t.get('project_id')]
+        projects = list(mongo.db.projects.find({"_id": {"$in": [ObjectId(pid) for pid in project_ids if pid]}}))
+
+    # Members list (admin only) — fetch all members from DB directly
+    members = []
+    if role == 'admin':
+        members = list(mongo.db.users.find({"role": "member"}, {"password": 0}))
 
     return render_template(
         'dashboard.html',
@@ -165,7 +184,8 @@ def dashboard():
         pending_tasks=pending_tasks,
         progress_tasks=progress_tasks,
         overdue_tasks=overdue_tasks,
-        projects=projects
+        projects=projects,
+        members=members
     )
 
 
@@ -213,13 +233,14 @@ def create_task():
         flash('Only admins can create tasks.', 'danger')
         return redirect('/dashboard')
 
-    users    = list(mongo.db.users.find({}, {"password": 0}))
-    projects = list(mongo.db.projects.find())
+    # Only fetch members for assign to dropdown (not admins)
+    users    = list(mongo.db.users.find({"role": "member"}, {"password": 0}))
+    projects = list(mongo.db.projects.find({"created_by": session['email']}))
 
     if request.method == 'POST':
         title       = request.form['title'].strip()
         description = request.form.get('description', '').strip()
-        assigned_to = request.form['assigned_to']   # email of assignee
+        assigned_to = request.form['assigned_to']
         due_date    = request.form['due_date']
         project_id  = request.form.get('project_id', '')
         priority    = request.form.get('priority', 'Medium')
@@ -275,7 +296,7 @@ def update_status(task_id):
     new_status  = status_flow.get(task['status'], "Done")
 
     mongo.db.tasks.update_one(
-        {"_id": ObjectId(task_id)},
+        {"_id": oid},
         {"$set": {"status": new_status, "updated_at": datetime.utcnow()}}
     )
     flash(f'Task status updated to "{new_status}".', 'success')
@@ -284,7 +305,7 @@ def update_status(task_id):
 
 # ── DELETE TASK (Admin only) ──────────────────────────────────────────────────
 
-@app.route('/delete_task/<task_id>' , methods=['POST'])
+@app.route('/delete_task/<task_id>', methods=['POST'])
 def delete_task(task_id):
     if login_required():
         return redirect('/login')
@@ -303,11 +324,23 @@ def delete_task(task_id):
     return redirect('/dashboard')
 
 
-# ── RUN ───────────────────────────────────────────────────────────────────────
+# ── DELETE MEMBER (Admin only) ────────────────────────────────────────────────
 
-@app.route('/health')
-def health():
-    return {"status": "ok"}
+@app.route('/delete_member_by_email/<email>', methods=['POST'])
+def delete_member_by_email(email):
+    if login_required():
+        return redirect('/login')
+    if session['role'] != 'admin':
+        flash('Only admins can remove members.', 'danger')
+        return redirect('/dashboard')
+
+    mongo.db.users.delete_one({"email": email, "role": "member"})
+    flash('Member removed successfully.', 'success')
+    return redirect('/dashboard')
+
+
+# ── ERROR HANDLERS ────────────────────────────────────────────────────────────
+
 @app.errorhandler(404)
 def not_found(e):
     return "Page not found", 404
@@ -315,6 +348,16 @@ def not_found(e):
 @app.errorhandler(500)
 def server_error(e):
     return "Something went wrong", 500
+
+
+# ── HEALTH CHECK ──────────────────────────────────────────────────────────────
+
+@app.route('/health')
+def health():
+    return {"status": "ok"}
+
+
+# ── RUN ───────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     app.run(debug=os.getenv("DEBUG", "false").lower() == "true")

@@ -137,7 +137,8 @@
                 </form>
                 {% endif %}
                 {% if role == 'admin' %}
-                <form method="POST" action="/delete_task/{{ task._id }}" style="display:inline;" onsubmit="return confirm('Delete this task?')">
+                <form method="POST" action="/delete_task/{{ task._id }}" style="display:inline;"
+                      onsubmit="return confirm('Delete this task?')">
                     <button type="submit" class="btn btn-danger btn-sm">🗑</button>
                 </form>
                 {% endif %}
@@ -151,6 +152,41 @@
     <div class="alert alert-info">No tasks yet.
         {% if role == 'admin' %}<a href="/create_task">Create one →</a>{% endif %}
     </div>
+    {% endif %}
+
+    <!-- Team Members Table (Admin only) — fetched from DB directly -->
+    {% if role == 'admin' %}
+    <h5 class="mb-2 mt-4">Team Members</h5>
+    {% if members %}
+    <div class="table-responsive mb-4">
+    <table class="table table-bordered align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for m in members %}
+        <tr>
+            <td>{{ m.name }}</td>
+            <td>{{ m.email }}</td>
+            <td>
+                <form method="POST" action="/delete_member_by_email/{{ m.email }}"
+                      onsubmit="return confirm('Remove this member?')"
+                      style="display:inline;">
+                    <button class="btn btn-danger btn-sm">Remove</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info mb-4">No members yet.</div>
+    {% endif %}
     {% endif %}
 
 </div>
